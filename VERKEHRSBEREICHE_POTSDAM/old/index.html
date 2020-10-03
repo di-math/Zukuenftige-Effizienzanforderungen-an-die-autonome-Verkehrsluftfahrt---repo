@@ -1,0 +1,209 @@
+<html>
+
+<head>
+
+<title>Verkehrsbereiche Potsdam</title>
+<script src="p5.js"></script>
+<link rel="shortcut icon" href="Graphicloads-Transport-Bus-3.ico">
+
+</head>
+
+<body>
+
+
+<script>
+
+var first = true;
+var n;
+var k;
+var loadedData = new Array();
+var loadedData_t = new Array();
+var stop_idBuffer = new Array();
+var fetched1 = false;
+var fetched2 = false;
+
+loadStops().then(response =>{
+    console.log('fetched data Stops');
+    fetched1 = true;
+    //showArray();
+});
+
+loadTimes().then(response =>{
+    console.log('fetched data Times');
+    fetched2 = true;
+});
+
+
+
+ /*function showArray(){
+    for(let i = 0; i<loadedData.length; i++){
+
+        if((loadedData[i+1] > 52.348586 && loadedData[i+1] < 52.434406)  && ((loadedData[i+2] > 12.986986) && (loadedData[i+2] < 13.144383))){
+            console.log(loadedData[i]);
+            console.log(loadedData[i+1]);
+            console.log(loadedData[i+2]);
+        }
+        i = i+2;
+    }
+
+ }*/
+
+
+let bg;
+function setup(){
+    bg = loadImage('Potsdam_Luftbild.jpg');
+    createCanvas(4800,2908);
+}
+
+
+function draw(){
+
+    background(bg);
+    
+    if(fetched1 && fetched2){
+
+        for(let i = 0; i<loadedData.length; i++){
+            
+            if(((loadedData[i+1] > 52.348586) && (loadedData[i+1] < 52.434406))  && ((loadedData[i+2] > 12.986986) && (loadedData[i+2] < 13.144383))){   //fehlerhaft
+                
+                //if(sctd){
+                    var lat = loadedData[i+1];
+                    var lon = loadedData[i+2];
+                    n = determ_color(lat, lon);             //überläd
+                    //drawCircle(i);
+                                    
+                //}
+
+                //n = map(n,22,6000,0,145);  //62421
+                //n=n/145;
+
+                //console.log(n);
+                
+                
+                //console.log(n);
+                
+                
+                    if(first){console.log(loadedData[i], loadedData[i+1], loadedData[i+2], n)}
+                
+
+
+                //console.log('Drawing', n);
+                //drawCircle(i);
+                
+                
+            }
+            
+            i=i+2;
+        }
+
+        first = false;
+        
+        
+    }
+        
+        
+
+}
+
+
+function drawCircle(i){
+    var i = i;
+    console.log('going to draw', i);
+    fill(255,0,0);
+    var x = (((loadedData[i+2]-12.96233)*2400)/0.127669);
+    var y = (((52.435036-loadedData[i+1])*1454)/0.047036);
+    rect(100,100,100,100);
+    circle(x,y,50);
+}
+
+function determ_color(lat, lon){         // from  to     nicht fehlerhaft(soweit)
+    var lat = lat;
+    var lon = lon;
+
+    for(let j = 0; j<loadedData.length; j++){
+        if((lat == loadedData[j+1]) && (lon == loadedData[j+2]))
+        stop_idBuffer.push(loadedData[j]);
+        j=j+2;
+    }
+    
+
+    var counter = 0;
+
+    for(let z = 0; z<loadedData_t.length; z++){
+        var f = z;
+        for(let k = 0; k<stop_idBuffer.length; k++){
+            if(loadedData_t[f] == stop_idBuffer[k]){
+                counter++;  
+                
+            }
+        }
+
+    }
+    
+    
+    stop_idBuffer = new Array();
+    
+    return counter;
+
+}
+
+
+async function loadStops(){
+
+  const response = await fetch('GTFS/stops.txt');
+  const dataStops = await response.text();
+
+    var stop_id;
+    var stop_lat;
+    var stop_lon;
+
+  const rows = dataStops.split('\n').slice(1);
+  rows.forEach(elt=> {
+
+
+    const row = elt.split(',"');
+    
+    stop_id = row[0];
+    stop_lat = row[3];
+    const stop_lonAM = row[4]; //AM: and more
+
+        const row2 = stop_lonAM.split(',');
+
+    stop_lon = row2[0];
+
+    stop_lat = stop_lat.slice(0, -1);
+    stop_lon = stop_lon.slice(0, -1);
+
+    loadedData.push(stop_id, stop_lat, stop_lon);
+  }); 
+
+  //stop.name has to be deleted in order to avoid errors caused by "," in stop.name -> database may not be consistent   ... editing elt.split(',')  to (',"') worked out
+}
+
+async function loadTimes(){  
+
+    const response = await fetch('GTFS/stop_times.txt');
+    const dataTimes = await response.text();
+
+        var stop_id_t
+    
+    const rows = dataTimes.split('\n').slice(1);
+    rows.forEach(elt=> {
+        const row = elt.split(',')
+        stop_id_t = row[3];
+        loadedData_t.push(stop_id_t);
+    });
+
+
+}
+
+
+</script>
+
+
+
+
+</body>
+
+
+</html>
